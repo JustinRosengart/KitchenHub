@@ -1,73 +1,109 @@
-# React + TypeScript + Vite
+# KitchenHub
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A smart kitchen inventory management app. Scan barcodes to add products, track expiry dates, and let a local AI generate recipe ideas from whatever is currently in your fridge.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Barcode scanning** – plug in a USB/Bluetooth barcode scanner and scan products directly; product data is fetched automatically from [OpenFoodFacts](https://world.openfoodfacts.org/)
+- **Inventory management** – add and consume items with quantity tracking and best-before dates
+- **Product details** – view nutritional information, brand, weight, origin and storage tips per product
+- **AI recipe suggestions** – select ingredients from your inventory and stream recipe ideas from a local [Ollama](https://ollama.com/) instance (Markdown-rendered output)
+- **Status indicators** – live connection status for the Supabase database and Ollama
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Layer        | Technology                         |
+| ------------ | ---------------------------------- |
+| Frontend     | React 19, TypeScript, Vite         |
+| Styling      | Tailwind CSS v4, MUI (Material UI) |
+| Database     | Supabase (self-hosted)             |
+| Product data | OpenFoodFacts API                  |
+| AI / LLM     | Ollama (local, streaming)          |
 
-## Expanding the ESLint configuration
+## Prerequisites
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Node.js** ≥ 18
+- **Supabase** running locally on `http://localhost:8000`
+- **Ollama** running locally on `http://localhost:11434`
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Getting Started
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+```bash
+# Install dependencies
+npm install
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Copy and fill in environment variables
+cp .env.example .env
+
+# Start the dev server
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The Vite dev server proxies `/rest`, `/auth`, `/storage` and `/realtime` to the local Supabase instance and `/ollama` to Ollama, so no CORS configuration is required.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Environment Variables
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Create a `.env` file in the project root:
+
+```env
+VITE_SUPABASE_URL=http://localhost:8000
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+## Database Schema
+
+Two tables are expected in Supabase:
+
+**`products`**
+
+| Column               | Type  | Description                  |
+| -------------------- | ----- | ---------------------------- |
+| `id`                 | uuid  | Primary key                  |
+| `barcode`            | text  | EAN / UPC barcode            |
+| `name`               | text  | Product name                 |
+| `brand`              | text  | Brand                        |
+| `category`           | text  | Category                     |
+| `weight`             | text  | e.g. `500g`, `1L`            |
+| `image_url`          | text  | Product image                |
+| `origin`             | text  | Country of origin            |
+| `storage_info`       | text  | Storage instructions         |
+| `nutrition`          | jsonb | Nutritional values per 100 g |
+| `default_shelf_life` | int   | Estimated shelf life in days |
+
+**`inventory`**
+
+| Column       | Type        | Description        |
+| ------------ | ----------- | ------------------ |
+| `id`         | uuid        | Primary key        |
+| `product_id` | uuid        | FK → products      |
+| `mhd`        | date        | Best-before date   |
+| `quantity`   | int         | Number of units    |
+| `added_at`   | timestamptz | Timestamp of entry |
+
+## Available Scripts
+
+```bash
+npm run dev      # Start development server
+npm run build    # Type-check and build for production
+npm run preview  # Preview production build
+npm run lint     # Run ESLint
+```
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── ScannerView.tsx        # Barcode scanner + add/consume flow
+│   ├── InventoryView.tsx      # Inventory list with expiry tracking
+│   ├── RecipeView.tsx         # AI recipe generation via Ollama
+│   ├── ProductDetailModal.tsx # Product info drawer
+│   └── MarkdownView.tsx       # Streaming Markdown renderer
+├── lib/
+│   ├── supabaseClient.ts      # Supabase client setup
+│   ├── ollamaClient.ts        # Ollama API (models + streaming)
+│   └── openFoodFacts.ts       # OpenFoodFacts product lookup
+├── types/
+│   └── index.ts               # Shared TypeScript types
+└── App.tsx                    # Root component + routing
 ```
