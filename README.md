@@ -1,155 +1,88 @@
-# 🥗 KitchenHub
+# KitchenHub 🍳
 
-**KitchenHub** is a smart, local-first kitchen inventory management application designed to reduce food waste and simplify meal planning.
+A smart, high-performance kitchen inventory management app. Scan barcodes to track your supplies, monitor expiry dates, and let a local AI generate recipe ideas from your current stock.
 
-By combining barcode scanning with local AI, KitchenHub helps you track what's in your fridge, monitors expiry dates, and generates creative recipes based *exactly* on what you have in stock—all without sending your personal data to the cloud.
+## 🚀 Features
 
----
+- **Smart Barcode Scanning** – Support for physical USB/Bluetooth scanners (HID mode) and manual barcode entry.
+- **Automated Data Enrichment** – Product details (name, brand, nutrition, storage info) are automatically fetched from [OpenFoodFacts](https://world.openfoodfacts.org/).
+- **FIFO Consumption** – When consuming items, the app automatically suggests or removes the oldest stock first (First-In-First-Out) to minimize waste.
+- **AI-Powered Chef** – Select ingredients from your inventory and stream recipe ideas from a local [Ollama](https://ollama.com/) instance using high-performance streaming.
+- **Real-time Status Monitoring** – Live connection indicators for your local Supabase database and Ollama instance.
+- **Modern UI/UX** – A polished, responsive interface built with Tailwind CSS v4 and Material UI, featuring smooth transitions and a mobile-first design.
 
-## ✨ Features
+## 🛠️ Tech Stack
 
-### 📱 Smart Inventory Management
-- **Barcode Scanning**: Supports USB/Bluetooth scanners for rapid entry.
-- **Dual Modes**:
-  - **Add Mode**: Fetches product metadata (name, brand, image, nutrition) automatically via [OpenFoodFacts](https://world.openfoodfacts.org/).
-  - **Consume Mode**: Quickly remove items or adjust quantities as you use them.
-- **Manual Entry**: Fallback for items without barcodes or internet connection.
+| Layer          | Technology                                     |
+| -------------- | ---------------------------------------------- |
+| **Frontend**   | React 19, TypeScript, Vite 8                   |
+| **Styling**    | Tailwind CSS v4, MUI (Material UI), Lucide Icons |
+| **Backend/DB** | Supabase (PostgreSQL + Realtime)               |
+| **Product Data** | OpenFoodFacts API                            |
+| **AI / LLM**   | Ollama (Local, Llama 3 or similar)             |
 
-### 🥬 Expiry Tracking
-- **Traffic Light System**: Visual indicators for item freshness (Green = Good, Orange = Use Soon, Red = Expired).
-- **Smart Sorting**: Inventory is automatically sorted by "Best Before" date (FIFO - First In, First Out).
-- **Detailed Insights**: View nutritional values (macros), storage instructions, and origin data per product.
+## 📋 Prerequisites
 
-### 👨‍🍳 AI Chef (Local LLM)
-- **Recipe Generation**: Selects ingredients from your current inventory to propose recipes.
-- **Privacy First**: Runs entirely locally using [Ollama](https://ollama.com/). No API keys or cloud subscriptions required.
-- **Model Selection**: Choose between different installed LLMs (e.g., Llama 3, Mistral) for variety in suggestions.
-- **Streaming UI**: Watch the recipe being written in real-time with Markdown rendering.
+- **Node.js** ≥ 20
+- **Supabase** running locally (e.g., via Docker or Supabase CLI) on `http://localhost:8000`
+- **Ollama** running locally on `http://localhost:11434` with a model like `llama3` or `mistral` pulled.
 
-### 🛠️ Tech & Architecture
-- **Real-time Sync**: Live status indicators for Database and AI service connectivity.
-- **Responsive Design**: Built for tablets and touchscreens (perfect for a kitchen dashboard).
+## ⚙️ Getting Started
 
----
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-## 🏗️ Tech Stack
+2. **Configure environment**
+   Create a `.env` file based on `.env.example`:
+   ```env
+   VITE_SUPABASE_URL=http://localhost:8000
+   VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
 
-| Layer | Technology | Description |
-| :--- | :--- | :--- |
-| **Frontend** | React 19, TypeScript | Modern UI with the latest React features. |
-| **Build Tool** | Vite | Fast HMR and optimized builds. |
-| **Styling** | Tailwind CSS v4 | Utility-first styling with the new v4 engine. |
-| **UI Components** | Lucide React | Clean, consistent iconography. |
-| **Database** | Supabase | Self-hosted PostgreSQL + Realtime capabilities. |
-| **AI / LLM** | Ollama | Local inference server for LLMs. |
-| **Data Source** | OpenFoodFacts API | Crowdsourced food product database. |
+3. **Database Setup**
+   Ensure your Supabase instance has the `products` and `inventory` tables configured (see schema details below).
 
----
+4. **Start development**
+   ```bash
+   npm run dev
+   ```
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-Ensure you have the following installed:
-- **Node.js** (v18 or higher)
-- **Supabase CLI** (or a local Supabase instance running on port `8000`)
-- **Ollama** (running on port `11434`)
-
-### Installation
-
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/JustinRosengart/KitchenHub.git
-    cd kitchenhub
-    ```
-
-2.  **Install dependencies**
-    ```bash
-    npm install
-    ```
-
-3.  **Configure Environment**
-    Create a `.env` file in the root directory:
-    ```env
-    VITE_SUPABASE_URL=http://localhost:8000
-    VITE_SUPABASE_ANON_KEY=your-local-supabase-anon-key
-    ```
-
-4.  **Start Backend Services**
-    - Start Supabase: `supabase start`
-    - Start Ollama: `ollama serve` (Ensure you have pulled a model, e.g., `ollama pull llama3`)
-
-5.  **Run the Application**
-    ```bash
-    npm run dev
-    ```
-    Open `http://localhost:5173` in your browser.
-
----
+The Vite dev server is configured to proxy requests to Supabase and Ollama, eliminating CORS issues during development.
 
 ## 🗄️ Database Schema
 
-The app requires two main tables in Supabase:
-
 ### `products`
-Stores static metadata about unique items (fetched from OpenFoodFacts).
-
-| Column | Type | Description |
-| :--- | :--- | :--- |
-| `id` | uuid | Primary Key |
-| `barcode` | text | EAN / UPC code (Unique) |
-| `name` | text | Product name |
-| `brand` | text | Brand name |
-| `image_url` | text | URL to product image |
-| `nutrition` | jsonb | JSON object with macros (fat, sugar, protein, etc.) |
-| `default_shelf_life` | int | Default days until expiry |
+Stores master data for scanned products.
+- `barcode` (text, unique): EAN/UPC identifier.
+- `name`, `brand`, `category`, `weight`: Descriptive fields.
+- `nutrition` (jsonb): Macro and micro nutrients.
+- `default_shelf_life` (int): Days until typical expiry.
 
 ### `inventory`
-Tracks specific instances of products in your kitchen.
-
-| Column | Type | Description |
-| :--- | :--- | :--- |
-| `id` | uuid | Primary Key |
-| `product_id` | uuid | Foreign Key → `products.id` |
-| `quantity` | int | Current stock level |
-| `mhd` | date | Best-before date (MHD) |
-| `added_at` | timestamptz | Date of entry |
-
----
+Tracks individual batches in your kitchen.
+- `product_id` (uuid): Reference to `products`.
+- `mhd` (date): Best-before date.
+- `quantity` (int): Number of units.
+- `added_at` (timestamptz): When the item was scanned.
 
 ## 📂 Project Structure
 
-```
+```text
 src/
 ├── components/
-│   ├── ScannerView.tsx        # Barcode handling (Add/Consume logic)
-│   ├── InventoryView.tsx      # List view with expiry logic
-│   ├── RecipeView.tsx         # AI integration & prompt engineering
-│   ├── ProductDetailModal.tsx # Detailed product info & nutrition viz
-│   └── MarkdownView.tsx       # Renderer for AI recipes
+│   ├── ScannerView.tsx        # Barcode logic (Add/Consume modes)
+│   ├── InventoryView.tsx      # Stock list with expiry warnings
+│   ├── RecipeView.tsx         # AI interaction & ingredient selection
+│   ├── ProductDetailModal.tsx # Detailed product insights
+│   └── MarkdownView.tsx       # Streaming AI response renderer
 ├── lib/
 │   ├── supabaseClient.ts      # Database connection
-│   ├── ollamaClient.ts        # AI service wrapper
-│   └── openFoodFacts.ts       # External API integration
-├── types/                     # TypeScript definitions
-└── App.tsx                    # Main layout & routing
+│   ├── ollamaClient.ts        # AI streaming service
+│   └── openFoodFacts.ts       # External product API wrapper
+└── App.tsx                    # State orchestration & layout
 ```
 
 ---
-
-## 🔮 Roadmap
-
-- [ ] **Shopping List**: Auto-generate shopping lists based on low stock or recipe requirements.
-- [ ] **Consumption Stats**: Visual graphs showing what you consume most.
-- [ ] **Multi-User Support**: Sync inventory across family members' devices.
-- [ ] **Custom Recipes**: Save your favorite AI-generated recipes.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-
-This project is open-source and available under the [MIT License](LICENSE.md).
+*Developed with 💙 and Gemini CLI.*
